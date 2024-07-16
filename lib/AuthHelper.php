@@ -182,4 +182,40 @@ class AuthHelper
             throw new SdkException("This request is not initiated from a valid shopify shop!");
         }
     }
+
+
+    /**
+     * Get Access token response for the API
+     * Call this when being redirected from shopify page ( to the $redirectUrl) after authentication
+     *
+     * @throws SdkException if SharedSecret or ApiKey is missing in SDK configuration or request is not valid
+     *
+     * @return array | null
+     */
+    public static function getAccessTokenResponse()
+    {
+        $config = ShopifySDK::$config;
+
+        if(!isset($config['SharedSecret']) || !isset($config['ApiKey'])) {
+            throw new SdkException("SharedSecret and ApiKey are required for getting access token. Please check SDK configuration!");
+        }
+
+        if(self::verifyShopifyRequest()) {
+            $data = array(
+                'client_id' => $config['ApiKey'],
+                'client_secret' => $config['SharedSecret'],
+                'code' => $_GET['code'],
+            );
+
+            $response = HttpRequestJson::post($config['AdminUrl'] . 'oauth/access_token', $data);
+
+            if (CurlRequest::$lastHttpCode >= 400) {
+                throw new SdkException("The shop is invalid or the authorization code has already been used.");
+            }
+
+            return isset($response['access_token']) ? $response: null;
+        } else {
+            throw new SdkException("This request is not initiated from a valid shopify shop!");
+        }
+    }
 }
